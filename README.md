@@ -97,6 +97,7 @@ ros2 launch robot_sim_pkg gazebo_gui.launch.py
 This mode runs the same simulation/control stack with the Gazebo GUI enabled.
 
 ![Headless Gazebo + RViz demo](docs/assets/gifs/demo_headless_gazebo_rviz_motion.gif)
+![Gazebo GUI + RViz demo](docs/assets/gifs/demo_gazebo_rviz_motion.gif)
 
 ## Useful Checks
 

@@ -25,7 +25,7 @@ Runtime data flow:
 - `joint_command_node` publishes commands to `/forward_position_controller/commands`.
 - `joint_state_broadcaster` publishes `/joint_states` for RViz monitoring.
 
-![Architecture diagram: ROS 2 nodes, topics, and control path](assets/images/architecture_ros2_gz_control_flow.png)
+![Architecture diagram: ROS 2 nodes, topics, and control path](assets/images/arch_node_graph.png)
 
 ## Technical Implementation
 - Robot model: `src/robot_description_pkg/urdf/two_link_arm.urdf.xacro`
@@ -68,9 +68,14 @@ The model uses two revolute joints (`joint1`, `joint2`), a fixed base (`world_to
   - `forward_position_controller`
 - `joint_command_node` publishes sinusoidal commands at 50 Hz and robot joint states update accordingly.
 
-![Evidence: active controllers in terminal](assets/images/result_active_controllers_terminal.png)
-![Evidence: RViz showing moving links and TF frames](assets/images/result_rviz_motion_frames.png)
+![Evidence: active controllers in terminal](assets/images/controllers_active_terminal.png)
+Headless mode with RViz2:
+
 ![Optional demo animation: headless Gazebo + RViz motion](assets/gifs/demo_headless_gazebo_rviz_motion.gif)
+
+Gazebo mode:
+
+![Optional demo animation: Gazebo GUI + RViz motion](assets/gifs/demo_gazebo_rviz_motion.gif)
 
 ## Reproducibility
 Install dependencies:
@@ -121,7 +126,7 @@ Key files for replication:
 - `src/robot_sim_pkg/src/joint_command_node.cpp`
 - `src/robot_sim_pkg/src/robot_sim_node.cpp`
 
-![Reproducibility setup flow and commands](assets/images/repro_setup_and_launch_steps.png)
+![Reproducibility setup flow and commands](assets/images/repro_build_steps.png)
 
 ## What to Improve
 - Add automated validation scripts that compare command vs state trajectories over a fixed run window.
