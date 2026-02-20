@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 from launch_ros.actions import Node
@@ -28,11 +28,16 @@ def generate_launch_description():
         executable='rviz2',
         name='rviz2',
         arguments=['-d', rviz_config],
-        parameters=[{'use_sim_time': True}],
+        parameters=[{'use_sim_time': False}],
         output='screen',
+    )
+
+    delayed_rviz = TimerAction(
+        period=5.0,
+        actions=[rviz_node],
     )
 
     return LaunchDescription([
         gazebo_demo_launch,
-        rviz_node,
+        delayed_rviz,
     ])

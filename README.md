@@ -1,78 +1,183 @@
-# ros2-urdf-gazebo-model
+# ROS 2 URDF Gazebo Model Workspace
 
-Physically consistent URDF robot model with modern Gazebo simulation and C++ control/testing nodes.
+This repository is a ROS 2 workspace for a two-link robot simulation using:
+- `robot_description_pkg` for URDF/Xacro assets
+- `robot_sim_pkg` for launch files, controller config, RViz config, and C++ nodes
 
-## Demo Goal
-
-Build a small ROS 2 demo that proves:
-
-1. URDF is physically valid (masses, inertia, limits, collisions).
-2. Model behaves correctly in simulation.
-3. Joint behavior is driven and validated from C++ nodes.
-
-## C++-First Project Layout
+## Workspace Structure
 
 ```text
-ros2_ws/
-  src/
-    robot_description_pkg/   # URDF/Xacro assets
-    robot_sim_pkg/           # C++ ROS 2 nodes + launch files
+ros2-urdf-gazebo-model/
+├── src/
+│   ├── robot_description_pkg/
+│   │   └── urdf/
+│   └── robot_sim_pkg/
+│       ├── config/
+│       ├── launch/
+│       ├── rviz/
+│       └── src/
+├── build/      # generated
+├── install/    # generated
+└── log/        # generated
 ```
 
+![RViz robot model](docs/assets/images/urdf_rviz_model.png)
+
 ## Prerequisites
+
+- Ubuntu with ROS 2 installed
+- Tested on ROS 2 Jazzy
+- `colcon` available
+- ROS 2 packages used by this workspace:
+  - `xacro`
+  - `robot_state_publisher`
+  - `rviz2`
+  - `controller_manager`
+  - `ros2_control`
+  - `ros2_controllers`
+  - `ros_gz_sim`
+  - `gz_ros2_control`
+
+Install dependencies:
 
 ```bash
 sudo apt update
 sudo apt install -y \
-  ros-humble-ros-gz-sim \
-  ros-humble-gz-ros2-control \
-  ros-humble-ros2-control \
-  ros-humble-ros2-controllers
+  ros-jazzy-ros-gz-sim \
+  ros-jazzy-gz-ros2-control \
+  ros-jazzy-ros2-control \
+  ros-jazzy-ros2-controllers
 ```
 
 ## Build
 
+Run from the workspace root:
+
 ```bash
-cd ros2_ws
-colcon build --packages-select robot_description_pkg robot_sim_pkg
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.bash
+colcon build --base-paths src
 source install/setup.bash
 ```
 
-## Launch Modes
+## Run
 
-1. URDF visualization only (no Gazebo):
+### 1. Visualize Description Only
 
 ```bash
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
 ros2 launch robot_sim_pkg demo_rviz.launch.py
 ```
 
-2. Modern Gazebo headless simulation + controllers:
+### 2. WSL2-Safe Simulation (Headless Gazebo + RViz + Controllers) (Recommended)
 
 ```bash
-ros2 launch robot_sim_pkg gazebo_demo.launch.py
-```
-
-3. Recommended portfolio mode: headless Gazebo + RViz2:
-
-```bash
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
 ros2 launch robot_sim_pkg gazebo_headless_rviz.launch.py
 ```
 
-This runs:
-1. `gz sim` server in headless mode
-2. robot spawn from `robot_description`
-3. `joint_state_broadcaster` + `forward_position_controller`
-4. C++ `joint_command_node` (sinusoidal position commands)
-5. RViz2 for visual monitoring
+This launch starts:
+- `robot_state_publisher`
+- Gazebo server (`gz sim`) in headless mode
+- `joint_state_broadcaster`
+- `forward_position_controller`
+- RViz2
 
-## Known Obstacles
+Use this mode on WSL2 when NVIDIA driver / OpenGL issues make Gazebo GUI unstable.
 
-On WSL2 with NVIDIA GPU, modern Gazebo GUI may crash due to renderer/driver constraints (OpenGL path limitations).  
-Because of this, this project uses headless Gazebo (`-s`) plus RViz2 for visualization.
+### 3. Native Gazebo GUI Simulation (Modern Gazebo)
 
-## Improvements
+```bash
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+ros2 launch robot_sim_pkg gazebo_gui.launch.py
+```
 
-1. Re-enable native Gazebo GUI when graphics stack supports stable OpenGL 3.3+ rendering for `gz sim`.
-2. Add CI smoke tests for controller startup (`joint_state_broadcaster`, `forward_position_controller`).
-3. Add end-effector trajectory/metrics logging for repeatable portfolio benchmarks.
+This mode runs the same simulation/control stack with the Gazebo GUI enabled.
+
+![Headless Gazebo + RViz demo](docs/assets/gifs/demo_headless_gazebo_rviz_motion.gif)
+
+## Useful Checks
+
+```bash
+ros2 control list_controllers --controller-manager /controller_manager
+ros2 topic echo /joint_states --once
+ros2 topic echo /forward_position_controller/commands --once
+```
+
+![Controllers active](docs/assets/images/controllers_active_terminal.png)
+![Topic checks](docs/assets/images/topics_check_terminal.png)
+
+## Architecture View
+
+![ROS node graph](docs/assets/images/arch_node_graph.png)
+
+## Reproducibility Snapshot
+
+```bash
+source /opt/ros/jazzy/setup.bash
+colcon test --base-paths src
+source install/setup.bash
+colcon test-result --verbose
+```
+
+![Build and test steps](docs/assets/images/repro_build_steps.png)
+
+## Key Files
+
+- Robot model entrypoint: `src/robot_description_pkg/urdf/two_link_arm.urdf.xacro`
+- URDF model file: `src/robot_description_pkg/urdf/two_link_arm.urdf`
+- Controller config: `src/robot_sim_pkg/config/controllers.yaml`
+- RViz-only launch: `src/robot_sim_pkg/launch/demo_rviz.launch.py`
+- WSL2-safe headless + RViz launch: `src/robot_sim_pkg/launch/gazebo_headless_rviz.launch.py`
+- Gazebo GUI launch: `src/robot_sim_pkg/launch/gazebo_gui.launch.py`
+- Joint command node: `src/robot_sim_pkg/src/joint_command_node.cpp`
+
+## Troubleshooting
+
+- Launch changes are not reflected:
+  - Rebuild and re-source:
+    ```bash
+    colcon build --base-paths src
+    source install/setup.bash
+    ```
+- Error: `Failed to load system plugin [libgz_ros2_control-system.so] : Could not find shared library.`  
+  Cause: `gz_ros2_control` is not installed or its plugin path is missing.
+  - Install dependency:
+    ```bash
+    sudo apt update
+    sudo apt install -y ros-jazzy-gz-ros2-control
+    ```
+  - Verify install:
+    ```bash
+    ros2 pkg prefix gz_ros2_control
+    find /opt/ros/jazzy -name libgz_ros2_control-system.so
+    ```
+  - Re-source and relaunch:
+    ```bash
+    source /opt/ros/jazzy/setup.bash
+    source install/setup.bash
+    ros2 launch robot_sim_pkg gazebo_headless_rviz.launch.py
+    ```
+- Robot appears disconnected in RViz and does not move in mode 2:
+  - Check controller state:
+    ```bash
+    ros2 control list_controllers --controller-manager /controller_manager
+    ```
+    Expected `active`: `joint_state_broadcaster`, `forward_position_controller`.
+  - Check joint state stream:
+    ```bash
+    ros2 topic echo /joint_states --once
+    ```
+  - If controllers are not active, relaunch mode 2 after sourcing:
+    ```bash
+    source /opt/ros/jazzy/setup.bash
+    source install/setup.bash
+    ros2 launch robot_sim_pkg gazebo_headless_rviz.launch.py
+    ```
+
+## Notes
+
+- `.gitignore` excludes generated ROS 2 workspace artifacts (`build/`, `install/`, `log/`) and editor/system files.
+- On WSL2 + NVIDIA, Gazebo GUI can be unstable; use mode 2 (`gazebo_headless_rviz.launch.py`) as the default stable workflow.

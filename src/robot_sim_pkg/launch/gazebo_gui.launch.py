@@ -2,8 +2,9 @@ import os
 
 from ament_index_python.packages import PackageNotFoundError, get_package_prefix
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, TimerAction
+from launch.actions import DeclareLaunchArgument, RegisterEventHandler, SetEnvironmentVariable, TimerAction
 from launch.event_handlers import OnProcessExit
+from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
@@ -42,12 +43,12 @@ def generate_launch_description():
     robot_description = ParameterValue(Command(['xacro ', xacro_path]), value_type=str)
     world_name = LaunchConfiguration('world_name')
 
-    gazebo_server_only = IncludeLaunchDescription(
+    gazebo_with_gui = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([FindPackageShare('ros_gz_sim'), 'launch', 'gz_sim.launch.py'])
         ]),
         launch_arguments={
-            'gz_args': ['-r -s -v 4 ', world_name, '.sdf'],
+            'gz_args': ['-r -v 4 ', world_name, '.sdf'],
         }.items(),
     )
 
@@ -129,7 +130,7 @@ def generate_launch_description():
         DeclareLaunchArgument('world_name', default_value='empty'),
         SetEnvironmentVariable('GZ_SIM_SYSTEM_PLUGIN_PATH', merged_gz_plugin_path),
         SetEnvironmentVariable('IGN_GAZEBO_SYSTEM_PLUGIN_PATH', merged_ign_plugin_path),
-        gazebo_server_only,
+        gazebo_with_gui,
         robot_state_publisher,
         delayed_spawn_entity,
         spawn_controllers,
